@@ -23,6 +23,7 @@ __export(keystone_exports, {
   default: () => keystone_default
 });
 module.exports = __toCommonJS(keystone_exports);
+var import_config = require("dotenv/config");
 var import_core2 = require("@keystone-6/core");
 
 // schema.ts
@@ -59,16 +60,9 @@ var lists = {
     }
   }),
   Post: (0, import_core.list)({
-    // WARNING
-    //   for this starter project, anyone can create, query, update and delete anything
-    //   if you want to prevent random people on the internet from accessing your data,
-    //   you can find out more at https://keystonejs.com/docs/guides/auth-and-access-control
     access: import_access.allowAll,
-    // this is the fields for our Post list
     fields: {
       title: (0, import_fields.text)({ validation: { isRequired: true } }),
-      // the document field can be used for making rich editable content
-      //   you can find out more at https://keystonejs.com/docs/guides/document-fields
       content: (0, import_fields_document.document)({
         formatting: true,
         layouts: [
@@ -81,11 +75,8 @@ var lists = {
         links: true,
         dividers: true
       }),
-      // with this field, you can set a User as the author for a Post
       author: (0, import_fields.relationship)({
-        // we could have used 'User', but then the relationship would only be 1-way
         ref: "User.posts",
-        // this is some customisations for changing how this will look in the AdminUI
         ui: {
           displayMode: "cards",
           cardFields: ["name", "email"],
@@ -93,44 +84,8 @@ var lists = {
           linkToItem: true,
           inlineConnect: true
         },
-        // a Post can only have one author
-        //   this is the default, but we show it here for verbosity
         many: false
-      }),
-      // with this field, you can add some Tags to Posts
-      tags: (0, import_fields.relationship)({
-        // we could have used 'Tag', but then the relationship would only be 1-way
-        ref: "Tag.posts",
-        // a Post can have many Tags, not just one
-        many: true,
-        // this is some customisations for changing how this will look in the AdminUI
-        ui: {
-          displayMode: "cards",
-          cardFields: ["name"],
-          inlineEdit: { fields: ["name"] },
-          linkToItem: true,
-          inlineConnect: true,
-          inlineCreate: { fields: ["name"] }
-        }
       })
-    }
-  }),
-  // this last list is our Tag list, it only has a name field for now
-  Tag: (0, import_core.list)({
-    // WARNING
-    //   for this starter project, anyone can create, query, update and delete anything
-    //   if you want to prevent random people on the internet from accessing your data,
-    //   you can find out more at https://keystonejs.com/docs/guides/auth-and-access-control
-    access: import_access.allowAll,
-    // setting this to isHidden for the user interface prevents this list being visible in the Admin UI
-    ui: {
-      isHidden: true
-    },
-    // this is the fields for our Tag list
-    fields: {
-      name: (0, import_fields.text)(),
-      // this can be helpful to find out all the Posts associated with a Tag
-      posts: (0, import_fields.relationship)({ ref: "Post.tags", many: true })
     }
   })
 };
@@ -172,11 +127,18 @@ var session = (0, import_session.statelessSessions)({
 var keystone_default = withAuth(
   (0, import_core2.config)({
     db: {
-      // we're using sqlite for the fastest startup experience
-      //   for more information on what database might be appropriate for you
-      //   see https://keystonejs.com/docs/guides/choosing-a-database#title
-      provider: "sqlite",
-      url: "file:./keystone.db"
+      provider: "mysql",
+      url: process.env.DATABASE_URL || "",
+      additionalPrismaDatasourceProperties: {
+        relationMode: "prisma"
+      },
+      enableLogging: true,
+      useMigrations: false,
+      idField: { kind: "autoincrement" },
+      onConnect: async (context) => {
+        console.log("connected to db");
+      }
+      // Optional advanced configuration
     },
     lists,
     session
